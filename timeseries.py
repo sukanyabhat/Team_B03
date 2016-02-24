@@ -32,5 +32,5 @@ def timeseries(ts):
     dfoutput = pd.Series(dftest[0:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
     for key,value in dftest[4].items():
         dfoutput['Critical Value (%s)'%key] = value
-        print (dfoutput)
+    print (dfoutput)
 
