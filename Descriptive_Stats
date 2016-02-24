@@ -1,10 +1,10 @@
-############
 #pandas for data manipulation
 import pandas as pd
 #numpy for numerical manipulation
 import numpy as np
 #to plot
 import matplotlib.pylab as plt
+import sys
 #for adjusted dickey fuller test
 from statsmodels.tsa.stattools import adfuller
 
@@ -18,38 +18,31 @@ plt.rcParams['figure.figsize'] = 15, 6
 dateparse = lambda dates: pd.datetime.strptime(dates, '%m/%d/%Y')
 # tab delimited; specify the time column
 data = pd.read_csv('C:\\Users\\sukanyabhat\\Desktop\\GODADDY\\Data\\student_data_20160215\\student_data_20160215.txt', sep="\t",parse_dates='orderdate', index_col='orderdate',date_parser=dateparse)
-
+#calculated metrics
+data['gcrmonth'] = data['gcr'] / data['product_months']
+data['gcrunits']=data['gcr'] / data['product_units']
+data['monthsunit']=data['product_months'] / data['product_units']
 #Let's take one subset of data and plot its TS
 #Need to modify this code to group on all the combinations and pull time series
 # something like pandas group by 
-data_subset=data[(data.report_region_1=='APAC') & (data.report_region_2=='APAC-Tier3') & (data.product_category_id==6)]
-#since TS needs sorted data
-data_subset.sortlevel(['orderdate'],inplace=True)
 
-#print (data.head())
-
-#time series of gcr
-ts_gcr = data['gcr'] 
-#time series of orders
-ts_orders = data['orders'] 
-plt.plot(ts_gcr)
-plt.plot(ts_orders)
-#taking span of 30 since it is daily data
-rolmean = pd.rolling_mean(ts_gcr, window=30)
-rolstd = pd.rolling_std(ts_gcr, window=30)
-
-#Plot rolling statistics:
-orig = plt.plot(ts_gcr, color='blue',label='Original')
-mean = plt.plot(rolmean, color='red', label='Rolling Mean')
-std = plt.plot(rolstd, color='black', label = 'Rolling Std')
-plt.legend(loc='best')
-plt.title('Rolling Mean & Standard Deviation')
-plt.show(block=False)
+group=data.groupby(['report_region_1','report_region_2','product_category_id'])
+#cnt=0
+for a,b,c in group.groups:
+    data_subset=data[(data.report_region_1==a) & (data.report_region_2==b) & (data.product_category_id==c)]
+    data_subset.sortlevel(['orderdate'],inplace=True)
+    if(len(data_subset.index)>=30):
+        ts_gcr = data_subset['gcr'] 
+    #    ts_orders = data_subset['orders'] 
+    #    ts_months = data_subset['product_months']
+    #    ts_units = data_subset['product_units']
+    #    ts_gcrmonth = data_subset['gcrmonth'] 
+    #    ts_gcrunits = data_subset['gcrunits'] 
+    #    ts_monthsunit = data_subset['monthsunit']     
+        timeseries(ts_gcr)
+#        cnt+=1
+#        if(cnt==50):
+#          break
+    else:
+        print("uh oh")
     
-#Perform Dickey-Fuller test:
-print ('Results of Dickey-Fuller Test:')
-dftest = adfuller(ts_gcr, autolag='AIC')
-dfoutput = pd.Series(dftest[0:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
-for key,value in dftest[4].items():
-    dfoutput['Critical Value (%s)'%key] = value
-print (dfoutput)
