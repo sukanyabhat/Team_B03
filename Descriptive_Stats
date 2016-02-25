@@ -18,6 +18,8 @@ plt.rcParams['figure.figsize'] = 15, 6
 dateparse = lambda dates: pd.datetime.strptime(dates, '%m/%d/%Y')
 # tab delimited; specify the time column
 data = pd.read_csv('C:\\Users\\sukanyabhat\\Desktop\\GODADDY\\Data\\student_data_20160215\\student_data_20160215.txt', sep="\t",parse_dates='orderdate', index_col='orderdate',date_parser=dateparse)
+output_file="anomalies.csv"
+fh=open(output_file,'w')
 #calculated metrics
 data['gcrmonth'] = data['gcr'] / data['product_months']
 data['gcrunits']=data['gcr'] / data['product_units']
@@ -28,21 +30,48 @@ data['monthsunit']=data['product_months'] / data['product_units']
 
 group=data.groupby(['report_region_1','report_region_2','product_category_id'])
 #cnt=0
+events=[]
 for a,b,c in group.groups:
     data_subset=data[(data.report_region_1==a) & (data.report_region_2==b) & (data.product_category_id==c)]
     data_subset.sortlevel(['orderdate'],inplace=True)
     if(len(data_subset.index)>=30):
+        print(a, " " , b , " " , c)
         ts_gcr = data_subset['gcr'] 
     #    ts_orders = data_subset['orders'] 
     #    ts_months = data_subset['product_months']
-    #    ts_units = data_subset['product_units']
-    #    ts_gcrmonth = data_subset['gcrmonth'] 
-    #    ts_gcrunits = data_subset['gcrunits'] 
-    #    ts_monthsunit = data_subset['monthsunit']     
-        timeseries(ts_gcr)
+        ts_units = data_subset['product_units']
+        ts_gcrmonth = data_subset['gcrmonth'] 
+        ts_gcrunits = data_subset['gcrunits'] 
+        ts_monthsunit = data_subset['monthsunit']     
+        events=timeseries(ts_gcr)
+        for i in range(len(events)):
+            #a.join([b,',',str(c),',',str(events[i]),"\n"])
+            fh.write(a+','+b+','+str(c)+','+str(events[i])+','+'GCR'+"\n")
+        events=timeseries(ts_units)
+        for i in range(len(events)):
+            #a.join([b,',',str(c),',',str(events[i]),"\n"])
+            fh.write(a+','+b+','+str(c)+','+str(events[i])+','+'UNITS'+"\n")
+        events=timeseries(ts_gcrmonth)
+        for i in range(len(events)):
+            #a.join([b,',',str(c),',',str(events[i]),"\n"])
+            fh.write(a+','+b+','+str(c)+','+str(events[i])+','+'GCR_Month'+"\n")
+        events=timeseries(ts_gcrunits)
+        for i in range(len(events)):
+            #a.join([b,',',str(c),',',str(events[i]),"\n"])
+            fh.write(a+','+b+','+str(c)+','+str(events[i])+','+'GCR_Units'+"\n")
+        events=timeseries(ts_monthsunit)
+        for i in range(len(events)):
+            #a.join([b,',',str(c),',',str(events[i]),"\n"])
+            fh.write(a+','+b+','+str(c)+','+str(events[i])+','+'Month Units'+"\n")
+
+#            print(a," ",b," ",c," ", events[i])
+                
 #        cnt+=1
-#        if(cnt==50):
+#        if(cnt==2):
 #          break
     else:
         print("uh oh")
-    
+fh.close()
+
+
+
