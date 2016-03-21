@@ -32,17 +32,27 @@ def timeseries(abc):
     plt.show(block=False)
 
     globalenv['abc'] = abc
-    RO.r('fit <- auto.arima(ts(abc,frequency=7))')
-    RO.r('print(fit)')
+    RO.r('fit_arima <- auto.arima(ts(abc,frequency=7))')
+#    RO.r('fit_ets <- ets(ts(abc,frequency=7))')
+#    RO.r('pred<-ifelse(AIC(fit_arima)<AIC(fit_ets),forecast(fit_arima,h=1),forecast(fit_ets,h=1))')
+    RO.r('pred<-forecast(fit_arima,h=1)')    
+    RO.r('prediction<-pred$mean[1]')
+    RO.r('prediction_min<-pred$lower[2]')
+    RO.r('prediction_max<-pred$upper[2]')
+    pandas2ri.activate()
+    x = pandas2ri.ri2py(r['prediction'])
+    y = pandas2ri.ri2py(r['prediction_min'])
+    z = pandas2ri.ri2py(r['prediction_max'])
     events= []
+    xyz = {'PRED':x, 'MIN':y, 'MAX':z}
+    print(xyz)  
     
-    
-    for key in abc.keys():
-        if abc[key] > rolmean[key]+3*rolstd[key]:
-            events.append(key)
-    for key in abc.keys():
-        if abc[key] < rolmean[key]-2*rolstd[key]:
-            events.append(key)
+#    for key in abc.keys():
+#        if abc[key] > rolmean[key]+3*rolstd[key]:
+#            events.append(key)
+#    for key in abc.keys():
+#        if abc[key] < rolmean[key]-2*rolstd[key]:
+#            events.append(key)
  
     return events           
     
