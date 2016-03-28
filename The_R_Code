@@ -26,7 +26,7 @@ for(i in 1:nrow(grp)) {
   predictions=rbind(predictions,data.frame(report_region_1=grp[i,1],report_region_2=grp[i,2],product_category_id=grp[i,3],orderdate="2015-01-02",metric="GCR",prediction=abs_pred,prediction_lower=prediction_min,prediction_upper=prediction_max))
 }
 
-data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-03')
+data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-05-01')
 date=unique(subset(data_test,select = c(orderdate)))
 
 for(i in 1:nrow(date)) {
