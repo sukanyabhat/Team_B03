@@ -3,9 +3,8 @@ initial_pred <- read.csv('Threshold Initial.csv',header = TRUE)
 initial_pred =subset(initial_pred,metric=="GCR")
 merged=merge(godaddy,initial_pred)
 anomalies=subset(merged, gcr<prediction_lower)
-colnames(anomalies)=c("orderdate","report_region_1","report_region_2","product_category_id","metric","gcr","prediction","prediction_lower","prediction_upper")
 anomalies$orderdate <- strptime(as.character(anomalies$orderdate), "%m/%d/%Y")
-anomalies <- subset(anomalies, select = c(orderdate,report_region_1,report_region_2,product_category_id,metric,gcr,prediction,prediction_lower,prediction_upper))
+anomalies <- subset(anomalies, select = c(orderdate,report_region_1,report_region_2,product_category_id,gcr,prediction,prediction_lower,prediction_upper))
 initial_pred$orderdate <- strptime(as.character(initial_pred$orderdate), "%m/%d/%Y")
 predictions=subset(initial_pred,report_region_1=='Dummy')
 godaddy$orderdate <- strptime(as.character(godaddy$orderdate), "%m/%d/%Y")
@@ -21,24 +20,25 @@ for(i in 1:nrow(grp)) {
   time_series_data=subset(time_series_data,select = c(gcr))
   time_series_data=as.ts(time_series_data,frequency=7,class="ts")
   pred=forecast(auto.arima(time_series_data),h=1)
-  prediction<-pred$mean[1]
+  abs_pred<-pred$mean[1]
   prediction_min<-pred$lower[2]
   prediction_max<-pred$upper[2]
-  predictions=rbind(predictions,data.frame(report_region_1=grp[i,1],report_region_2=grp[i,2],product_category_id=grp[i,3],orderdate="2015-01-02",metric="GCR",prediction=prediction,prediction_lower=prediction_min,prediction_upper=prediction_max))
+  predictions=rbind(predictions,data.frame(report_region_1=grp[i,1],report_region_2=grp[i,2],product_category_id=grp[i,3],orderdate="2015-01-02",metric="GCR",prediction=abs_pred,prediction_lower=prediction_min,prediction_upper=prediction_max))
 }
 
 data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-03')
 date=unique(subset(data_test,select = c(orderdate)))
+
 for(i in 1:nrow(date)) {
-
-
+  
+  
   current_date=format(date[i,1],"%Y-%m-%d")
   print(current_date)
   curent_date_pred=subset(predictions,orderdate==current_date)
   current_date_observed=subset(data_test,orderdate==current_date)
   merged=merge(curent_date_pred,current_date_observed)
   anomalies_new=subset(merged, gcr<prediction_lower)
-  anomalies_new <- subset(anomalies_new, select = c(orderdate,report_region_1,report_region_2,product_category_id,metric,gcr,prediction,prediction_lower,prediction_upper))
+  anomalies_new <- subset(anomalies_new, select = c(orderdate,report_region_1,report_region_2,product_category_id,gcr,prediction,prediction_lower,prediction_upper))
   anomalies=rbind(anomalies,anomalies_new)
   data_train=rbind(data_train,current_date_observed)
   grp=unique(subset(data_train,select = c(report_region_1,report_region_2,product_category_id)))
@@ -59,6 +59,6 @@ for(i in 1:nrow(date)) {
   
   print(as.Date(current_date)+1)
   
-
+  
 }
 write.csv(anomalies,"Output_today.csv",row.names = F)
