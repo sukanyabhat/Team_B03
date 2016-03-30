@@ -26,14 +26,29 @@ for(i in 1:nrow(grp)) {
   time_series_data$gcr[is.na(time_series_data$gcr)] <- 0
   time_series_data=subset(time_series_data,select = c(gcr))
   time_series_data=as.ts(time_series_data,frequency=7,class="ts")
-  pred=forecast(auto.arima(time_series_data),h=1)
-  abs_pred<-pred$mean[1]
-  prediction_min<-pred$lower[2]
-  prediction_max<-pred$upper[2]
+  arima_aic=AIC(auto.arima(time_series_data))
+  Name=c("Arima","ETS")
+  ETS_aic=AIC(ets(time_series_data))
+  AIC=c(arima_aic,ETS_aic)
+  pred_arima=forecast(auto.arima(time_series_data),h=1)
+  pred_ets=forecast(ets(time_series_data),h=1)
+  abs_pred_arima<-pred_arima$mean[1]
+  prediction_min_arima<-pred_arima$lower[2]
+  prediction_max_arima<-pred_arima$upper[2]
+  abs_pred_ets<-pred_ets$mean[1]
+  prediction_min_ets<-pred_ets$lower[2]
+  prediction_max_ets<-pred_ets$upper[2]
+  pred=c(abs_pred_arima,abs_pred_ets)
+  prediction_min=c(prediction_min_arima,prediction_min_ets)
+  prediction_max=c(prediction_max_arima,prediction_max_ets)
+  df=data.frame(Name,AIC,pred,prediction_min,prediction_max)
+  abs_pred<-df$pred[which.min(df$AIC)]
+  prediction_min<-df$prediction_min[which.min(df$AIC)]
+  prediction_max<-df$prediction_max[which.min(df$AIC)]
   predictions=rbind(predictions,data.frame(report_region_1=grp[i,1],report_region_2=grp[i,2],product_category_id=grp[i,3],orderdate="2015-01-02",metric="GCR",prediction=abs_pred,prediction_lower=prediction_min,prediction_upper=prediction_max))
 }
 
-data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-05')
+data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-10')
 date=unique(subset(data_test,select = c(orderdate)))
 
 for(i in 1:nrow(date)) {
@@ -64,10 +79,27 @@ for(i in 1:nrow(date)) {
     time_series_data$gcr[is.na(time_series_data$gcr)] <- 0
     time_series_data=subset(time_series_data,select = c(gcr))
     time_series_data=as.ts(time_series_data,frequency=7,class="ts")
-    pred=forecast(auto.arima(time_series_data),h=1)
-    prediction<-pred$mean[1]
-    prediction_min<-pred$lower[2]
-    prediction_max<-pred$upper[2]
+    Name=c("Arima","ETS")
+    
+    arima_aic=AIC(auto.arima(time_series_data))
+    ETS_aic=AIC(ets(time_series_data))
+    AIC=c(arima_aic,ETS_aic)
+    pred_arima=forecast(auto.arima(time_series_data),h=1)
+    pred_ets=forecast(ets(time_series_data),h=1)
+    abs_pred_arima<-pred_arima$mean[1]
+    prediction_min_arima<-pred_arima$lower[2]
+    prediction_max_arima<-pred_arima$upper[2]
+    abs_pred_ets<-pred_ets$mean[1]
+    prediction_min_ets<-pred_ets$lower[2]
+    prediction_max_ets<-pred_ets$upper[2]
+    pred=c(abs_pred_arima,abs_pred_ets)
+    prediction_min=c(prediction_min_arima,prediction_min_ets)
+    prediction_max=c(prediction_max_arima,prediction_max_ets)
+    df=data.frame(Name,AIC,pred,prediction_min,prediction_max)
+    
+    abs_pred<-df$pred[which.min(df$AIC)]
+    prediction_min<-df$prediction_min[which.min(df$AIC)]
+    prediction_max<-df$prediction_max[which.min(df$AIC)]
     predictions=rbind(predictions,data.frame(report_region_1=grp[j,1],report_region_2=grp[j,2],product_category_id=grp[j,3],orderdate=next_day,metric="GCR",prediction=prediction,prediction_lower=prediction_min,prediction_upper=prediction_max))
   }
   
