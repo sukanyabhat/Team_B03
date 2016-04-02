@@ -1,39 +1,101 @@
+#read the tab delimited data 
 godaddy <- read.table('student_data_20160215.txt',header = TRUE,sep='\t')
+
+#read the initial prediction for Jan 1 2015 from initilization file
 initial_pred <- read.csv('Threshold Initial.csv',header = TRUE)
+
+#we want only gcr
 initial_pred =subset(initial_pred,metric=="GCR")
+
 merged=merge(godaddy,initial_pred)
 anomalies=subset(merged, gcr<prediction_lower)
 anomalies$orderdate <- strptime(as.character(anomalies$orderdate), "%m/%d/%Y")
+
+#choose only required columns
 anomalies <- subset(anomalies, select = c(orderdate,report_region_1,report_region_2,product_category_id,gcr,prediction,prediction_lower,prediction_upper))
-initial_pred$orderdate <- strptime(as.character(initial_pred$orderdate), "%m/%d/%Y")
-predictions=subset(initial_pred,report_region_1=='Dummy')
 godaddy$orderdate <- strptime(as.character(godaddy$orderdate), "%m/%d/%Y")
+
+#prioritization logic
+
+for(i in 1:nrow(anomalies))
+{
+  date = anomalies[i,1]
+  r1 = anomalies[i,2]
+  r2 = anomalies[i,3]
+  id = anomalies[i,4]
+  w0 = godaddy[godaddy$orderdate==date & godaddy$report_region_1==r1 & godaddy$report_region_2==r2 & godaddy$product_category_id==id,]
+  w1 = godaddy[godaddy$orderdate==format((date-7),"%Y-%m-%d") & godaddy$report_region_1==r1 & godaddy$report_region_2==r2 & godaddy$product_category_id==id,]
+  w2 = godaddy[godaddy$orderdate==format((date-14),"%Y-%m-%d") & godaddy$report_region_1==r1 & godaddy$report_region_2==r2 & godaddy$product_category_id==id,]
+  w3 = godaddy[godaddy$orderdate==format((date-21),"%Y-%m-%d") & godaddy$report_region_1==r1 & godaddy$report_region_2==r2 & godaddy$product_category_id==id,]
+  w4 = godaddy[godaddy$orderdate==format((date-28),"%Y-%m-%d") & godaddy$report_region_1==r1 & godaddy$report_region_2==r2 & godaddy$product_category_id==id,]
+  w5 = godaddy[godaddy$orderdate==format((date-35),"%Y-%m-%d") & godaddy$report_region_1==r1 & godaddy$report_region_2==r2 & godaddy$product_category_id==id,]
+  
+  #6 weeks average
+  anomalies$average[i] = sum(w0$gcr,w1$gcr,w2$gcr,w3$gcr,w4$gcr,w5$gcr,na.rm=TRUE)/6 
+  
+}
+#reverse order rank, largest value smallest rank
+anomalies$priority <- rank(-anomalies$average)
+
+
+
+
+
+initial_pred$orderdate <- strptime(as.character(initial_pred$orderdate), "%m/%d/%Y")
+
+#creating empty copy
+predictions=subset(initial_pred,report_region_1=='Dummy')
 library(forecast)
+
+#Train data from Jan 2012 - Jan 1 2015
 data_train=subset(godaddy,orderdate <= '2015-01-01')
 
+#unique groups
 grp=unique(subset(data_train,select = c(report_region_1,report_region_2,product_category_id)))
 
+#For every group
 for(i in 1:nrow(grp)) {
   
   time_series_data=subset(data_train,(data_train$report_region_1==grp[i,1]) & (data_train$report_region_2 == grp[i,2]) & (data_train$product_category_id==grp[i,3]))
+  #order by date
   time_series_data=time_series_data[order(time_series_data$orderdate),]
+  #reset index
   rownames(time_series_data) <- 1:nrow(time_series_data)
+  #start date of time series
   st=format(time_series_data$orderdate[1],"%Y-%m-%d")
+  #last date of time series
   lt=format(time_series_data$orderdate[nrow(time_series_data)],"%Y-%m-%d")
+  #Create a sequence of countinuous dates 
   abc <- data.frame(orderdate=seq.Date(as.Date(st), as.Date(lt), by="day"))
   time_series_data$orderdate=as.Date(format(time_series_data$orderdate,"%Y-%m-%d"))
+  #right join
   time_series_data <- merge(time_series_data,abc, all.y=TRUE )
+  #replace nulls with 0
   time_series_data$gcr[is.na(time_series_data$gcr)] <- 0
+  
+  #doing this for only gcr
   time_series_data=subset(time_series_data,select = c(gcr))
+  
+  #find outliers and the best replacement values
+  g<-data.frame(tsoutliers(time_series_data$gcr))
+  #replace
+  time_series_data[g$index,1]=g$replacements
+  #convert to time series , units of 7 days
   time_series_data=as.ts(time_series_data,frequency=7,class="ts")
+  #best arima model
   arima_aic=AIC(auto.arima(time_series_data))
   Name=c("Arima","ETS")
+  #best ets model
   ETS_aic=AIC(ets(time_series_data))
   AIC=c(arima_aic,ETS_aic)
+  #next day prediction
   pred_arima=forecast(auto.arima(time_series_data),h=1)
   pred_ets=forecast(ets(time_series_data),h=1)
+  #absolute prediction
   abs_pred_arima<-pred_arima$mean[1]
+  #lower threshold
   prediction_min_arima<-pred_arima$lower[2]
+  #upper threshold
   prediction_max_arima<-pred_arima$upper[2]
   abs_pred_ets<-pred_ets$mean[1]
   prediction_min_ets<-pred_ets$lower[2]
@@ -41,16 +103,21 @@ for(i in 1:nrow(grp)) {
   pred=c(abs_pred_arima,abs_pred_ets)
   prediction_min=c(prediction_min_arima,prediction_min_ets)
   prediction_max=c(prediction_max_arima,prediction_max_ets)
+  # create data frame with all the related arima and ets values 
   df=data.frame(Name,AIC,pred,prediction_min,prediction_max)
+  #choose best AIC
   abs_pred<-df$pred[which.min(df$AIC)]
   prediction_min<-df$prediction_min[which.min(df$AIC)]
   prediction_max<-df$prediction_max[which.min(df$AIC)]
+  #combine with old predictions
   predictions=rbind(predictions,data.frame(report_region_1=grp[i,1],report_region_2=grp[i,2],product_category_id=grp[i,3],orderdate="2015-01-02",metric="GCR",prediction=abs_pred,prediction_lower=prediction_min,prediction_upper=prediction_max))
 }
-
-data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-10')
+#test set 2 jan onwards
+data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-05')
+#list of dats in test
 date=unique(subset(data_test,select = c(orderdate)))
 
+#for each date
 for(i in 1:nrow(date)) {
   
   
@@ -61,12 +128,42 @@ for(i in 1:nrow(date)) {
   merged=merge(curent_date_pred,current_date_observed)
   anomalies_new=subset(merged, gcr<prediction_lower)
   anomalies_new <- subset(anomalies_new, select = c(orderdate,report_region_1,report_region_2,product_category_id,gcr,prediction,prediction_lower,prediction_upper))
+  
+  for(j in 1:nrow(anomalies_new))
+  { ifelse(nrow(anomalies_new)==0,break,'')
+    Adate = as.POSIXlt(anomalies_new[j,1])
+    r1 = anomalies_new[j,2]
+    r2 = anomalies_new[j,3]
+    id = anomalies_new[j,4]
+    w0 = data_train[data_train$orderdate==Adate & data_train$report_region_1==r1 & data_train$report_region_2==r2 & data_train$product_category_id==id,]
+    w1 = data_train[data_train$orderdate==format((Adate-7),"%Y-%m-%d") & data_train$report_region_1==r1 & data_train$report_region_2==r2 & data_train$product_category_id==id,]
+    w2 = data_train[data_train$orderdate==format((Adate-14),"%Y-%m-%d") & data_train$report_region_1==r1 & data_train$report_region_2==r2 & data_train$product_category_id==id,]
+    w3 = data_train[data_train$orderdate==format((Adate-21),"%Y-%m-%d") & data_train$report_region_1==r1 & data_train$report_region_2==r2 & data_train$product_category_id==id,]
+    w4 = data_train[data_train$orderdate==format((Adate-28),"%Y-%m-%d") & data_train$report_region_1==r1 & data_train$report_region_2==r2 & data_train$product_category_id==id,]
+    w5 = data_train[data_train$orderdate==format((Adate-35),"%Y-%m-%d") & data_train$report_region_1==r1 & data_train$report_region_2==r2 & data_train$product_category_id==id,]
+    
+    
+    anomalies_new$average[j] = sum(w0$gcr,w1$gcr,w2$gcr,w3$gcr,w4$gcr,w5$gcr,na.rm=TRUE)/6 
+    
+  }
+  if(nrow(anomalies_new)>0) { anomalies_new$priority <- rank(-anomalies_new$average)}
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   anomalies=rbind(anomalies,anomalies_new)
   data_train=rbind(data_train,current_date_observed)
   grp=unique(subset(data_train,select = c(report_region_1,report_region_2,product_category_id)))
   
   next_day=as.Date(current_date)+1
-  next_day=format(next_day,"%Y-%m-%d")
+  next_day=format(next_day,"%Y-%m-%d") 
   for(j in 1:nrow(grp)) {
     time_series_data=subset(data_train,(data_train$report_region_1==grp[j,1]) & (data_train$report_region_2 == grp[j,2]) & (data_train$product_category_id==grp[j,3]))
     time_series_data=time_series_data[order(time_series_data$orderdate),]
@@ -78,6 +175,11 @@ for(i in 1:nrow(date)) {
     time_series_data <- merge(time_series_data,abc, all.y=TRUE )
     time_series_data$gcr[is.na(time_series_data$gcr)] <- 0
     time_series_data=subset(time_series_data,select = c(gcr))
+    
+    
+    g<-data.frame(tsoutliers(time_series_data$gcr))
+    time_series_data[g$index,1]=g$replacements
+    
     time_series_data=as.ts(time_series_data,frequency=7,class="ts")
     Name=c("Arima","ETS")
     
@@ -100,7 +202,7 @@ for(i in 1:nrow(date)) {
     abs_pred<-df$pred[which.min(df$AIC)]
     prediction_min<-df$prediction_min[which.min(df$AIC)]
     prediction_max<-df$prediction_max[which.min(df$AIC)]
-    predictions=rbind(predictions,data.frame(report_region_1=grp[j,1],report_region_2=grp[j,2],product_category_id=grp[j,3],orderdate=next_day,metric="GCR",prediction=prediction,prediction_lower=prediction_min,prediction_upper=prediction_max))
+    predictions=rbind(predictions,data.frame(report_region_1=grp[j,1],report_region_2=grp[j,2],product_category_id=grp[j,3],orderdate=next_day,metric="GCR",prediction=abs_pred,prediction_lower=prediction_min,prediction_upper=prediction_max))
   }
   
   print(as.Date(current_date)+1)
