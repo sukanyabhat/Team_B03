@@ -116,7 +116,7 @@ for(i in 1:nrow(grp)) {
 data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-05')
 #list of dats in test
 date=unique(subset(data_test,select = c(orderdate)))
-
+date=date[order(date$orderdate),]
 #for each date
 for(i in 1:nrow(date)) {
   
