@@ -113,7 +113,7 @@ for(i in 1:nrow(grp)) {
   predictions=rbind(predictions,data.frame(report_region_1=grp[i,1],report_region_2=grp[i,2],product_category_id=grp[i,3],orderdate="2015-01-02",metric="GCR",prediction=abs_pred,prediction_lower=prediction_min,prediction_upper=prediction_max))
 }
 #test set 2 jan onwards
-data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-01-05')
+data_test=subset(godaddy,orderdate > '2015-01-01' & orderdate <= '2015-09-30')
 #list of dats in test
 date=unique(subset(data_test[order(data_test$orderdate),],select = c(orderdate)))
 #for each date
