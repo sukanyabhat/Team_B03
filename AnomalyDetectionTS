@@ -1,0 +1,49 @@
+library(forecast)
+install.packages("devtools")
+devtools::install_github("twitter/AnomalyDetection")
+library(AnomalyDetection)
+
+
+#read the tab delimited data 
+godaddy <- read.table('student_data_20160215.txt',header = TRUE,sep='\t')
+godaddy$orderdate = paste(godaddy$orderdate,"00:00:01",sep=" ")
+godaddy$orderdate <- strptime(as.character(godaddy$orderdate), "%m/%d/%Y %H:%M:%OS")
+
+df = data.frame(matrix(vector(), 0, 6,
+                       dimnames=list(c(), c("timestamp", "anoms", "expected_value","report_region_1","report_region_2","product_category_id"))),
+                stringsAsFactors=F)
+#unique groups
+grp=unique(subset(data_train,select = c(report_region_1,report_region_2,product_category_id)))
+
+#For every group
+for(i in 1:nrow(grp)) {
+  
+  time_series_data=subset(godaddy,(godaddy$report_region_1==grp[i,1]) & (godaddy$report_region_2 == grp[i,2]) & (godaddy$product_category_id==grp[i,3]))
+  #order by date
+  
+  time_series_data=time_series_data[order(time_series_data$orderdate),]
+  #reset index
+  rownames(time_series_data) <- 1:nrow(time_series_data)
+  #start date of time series
+  st=time_series_data$orderdate[1]
+  #last date of time series
+  lt=time_series_data$orderdate[nrow(time_series_data)]
+  #Create a sequence of countinuous dates 
+  abc <- data.frame(orderdate=seq.POSIXt((st), (lt), by="day"))
+  time_series_data$orderdate=as.POSIXct(time_series_data$orderdate)
+  #right join
+  time_series_data <- merge(time_series_data,abc, all.y=TRUE )
+  #replace nulls with 0
+  time_series_data$gcr[is.na(time_series_data$gcr)] <- 0
+  
+  #doing this for only gcr
+  time_series_data=subset(time_series_data,select = c(orderdate,gcr))
+  anomalies=AnomalyDetectionTs(time_series_data,max_anoms = 0.3, direction = "neg", alpha = 0.05,e_value = TRUE,longterm = TRUE)
+  output=anomalies$anoms
+  output$report_region_1=grp[i,1]
+  output$report_region_2=grp[i,2]
+  output$product_category_id=grp[i,3]
+  df=rbind(df,output)
+    
+}
+write.csv(df,"Out.csv",row.names = F)
