@@ -81,7 +81,7 @@ for(i in 1:nrow(grp)) {
   #replace
   time_series_data[g$index,1]=g$replacements
   #convert to time series , units of 7 days
-  time_series_data=as.ts(time_series_data,frequency=7,class="ts")
+  time_series_data=msts(time_series_data,seasonal.periods=c(7,365.25),ts.frequency=7)
   #best arima model
   arima_aic=AIC(auto.arima(time_series_data))
   Name=c("Arima","ETS")
@@ -179,7 +179,8 @@ for(i in 1:nrow(date)) {
     g<-data.frame(tsoutliers(time_series_data$gcr))
     time_series_data[g$index,1]=g$replacements
     
-    time_series_data=as.ts(time_series_data,frequency=7,class="ts")
+    time_series_data=msts(time_series_data,seasonal.periods=c(7,365.25),ts.frequency=7)
+
     Name=c("Arima","ETS")
     
     arima_aic=AIC(auto.arima(time_series_data))
