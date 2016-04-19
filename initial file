@@ -9,39 +9,39 @@ predictions=NULL
 #head(time_series_data)
 #prediction_func=function(data_train,metric_col_start,dimension,no_of_metric){
 for (j in 1:no_of_metric){
-for(i in 1:nrow(dimension)){
-  time_series_data=merge(data_train,dimension[i,])[, names(data_train)]
-  
-  time_series_data=subset(time_series_data[order(time_series_data[[1]]),],select=c(metric_col_start+j))
-  
-#order by date
-if (mean(time_series_data[[1]]) == 0)
-  next
-if (dim(time_series_data)[1] < 30)
-  next
-#need to think if this helps or not
-
-#find outliers and the best replacement values
-g<-data.frame(tsoutliers(time_series_data[[1]]))
-#replace
-time_series_data[g$index,1]=g$replacements
-#convert to time series , units of 7 days
-
-time_series_data=ts(time_series_data,frequency = 7)
-#next day prediction
-pred_arima=forecast(auto.arima(time_series_data,approximation=TRUE),h=1)
-#absolute prediction
-abs_pred<-pred_arima$mean[1]
-#lower threshold
-prediction_min<-pred_arima$lower[2]
-#upper threshold
-prediction_max<-pred_arima$upper[2]
-
-
-
-#combine with old predictions
-predictions=rbind(predictions,cbind(dimension[i,],(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),colnames(data_train)[metric_col_start+j],prediction_min,abs_pred,prediction_max))
-}
+  for(i in 1:nrow(dimension)){
+    time_series_data=merge(data_train,dimension[i,])[, names(data_train)]
+    
+    time_series_data=subset(time_series_data[order(time_series_data[[1]]),],select=c(metric_col_start+j))
+    
+    #order by date
+    if (mean(time_series_data[[1]]) == 0)
+      next
+    if (dim(time_series_data)[1] < 30)
+      next
+    #need to think if this helps or not
+    
+    #find outliers and the best replacement values
+    g<-data.frame(tsoutliers(time_series_data[[1]]))
+    #replace
+    time_series_data[g$index,1]=g$replacements
+    #convert to time series , units of 7 days
+    
+    time_series_data=ts(time_series_data,frequency = 7)
+    #next day prediction
+    pred_arima=forecast(auto.arima(time_series_data,approximation=TRUE),h=1)
+    #absolute prediction
+    abs_pred<-pred_arima$mean[1]
+    #lower threshold
+    prediction_min<-pred_arima$lower[2]
+    #upper threshold
+    prediction_max<-pred_arima$upper[2]
+    
+    
+    
+    #combine with old predictions
+    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
+  }
 }
 
 write.table(predictions,file = paste("Threshold_Initial_", "godaddy_set_1", ".csv",sep = ""),row.names = F, sep=",",  col.names=FALSE)
