@@ -124,7 +124,7 @@ dimension_number=c(ncol(sample_dimension_combinations),2,2,ncol(sample_sub_combi
 
 Xref_table=data.frame(subset,dimension_table,dimension_number)
 Xref_table <<- Xref_table
-Initial_date<<-"2015-09-01"
+Initial_date<<-"2015-09-26"
 
 
 data_train=subset(godaddy_set_1,godaddy_set_1[[1]]<Initial_date)
@@ -386,21 +386,18 @@ anomalies_set_5=Anomaly_Detection(godaddy_set_5)
 #Prediction function
 
 Prediction=function(data,date){
-  
-  
   data_train=subset(data,data[[1]]<=date)
   
   dimension_number=Xref_table$dimension_number[Xref_table$subset==deparse(substitute(data))]
   dimension_table=Xref_table$dimension_table[Xref_table$subset==deparse(substitute(data))]
   
-  #dimension_number=Xref_table$dimension_number[Xref_table$subset=="godaddy_set_1"]
-  #dimension_table=Xref_table$dimension_table[Xref_table$subset=="godaddy_set_1"]
+  #dimension_number=Xref_table$dimension_number[Xref_table$subset=="godaddy_set_5"]
+  #dimension_table=Xref_table$dimension_table[Xref_table$subset=="godaddy_set_5"]
   
   metric_col_start=dimension_number+1
   no_of_metric=ncol(data)-(dimension_number+1)
   dimension=data.frame(combination_table[[dimension_table]])
   
- 
   
   predictions=NULL
   #j loop for remaining metrics
@@ -442,7 +439,42 @@ Prediction=function(data,date){
   
 return(predictions)
 }
+###########################################################################################################
 
+
+Anomaly_DetectionTS=function(data,preds){
+  dimension_number=Xref_table$dimension_number[Xref_table$subset==deparse(substitute(data))]
+  #dimension_number=Xref_table$dimension_number[Xref_table$subset=="godaddy_set_1"]
+  
+  
+  #Read Initial prediction file 
+  
+  #initial_pred <- read.csv(paste("Threshold_Initial_","godaddy_set_1",".csv",sep = ""),header = FALSE)
+  initial_pred <- preds
+  
+  initial_pred[[2]] <- strptime(as.character(initial_pred[[2]]), "%Y-%m-%d")
+  anomalies=NULL
+  for (j in (dimension_number+2):ncol(data)){
+    #Check metric
+    
+    initial_prediction =subset(initial_pred,initial_pred[[1]]==colnames(data)[j],select=c(2:ncol(initial_pred)))
+    
+    #get the current date observed values
+    godaddy_current_data_set=subset(data,data[[1]]==unique(initial_prediction[[1]]))
+    
+    #join with predictions to check where the metric is less than predicted
+    merged=merge(godaddy_current_data_set,initial_prediction,by.x = c(1:(dimension_number+1)),by.y  = c(1:(dimension_number+1)))
+    
+    anomalies_new=subset(merged, merged[,j]<merged[,(ncol(merged)-2)])
+    if(nrow(anomalies_new)>0){
+      anomalies_new$anomaly_metric=colnames(anomalies_new)[j]
+      anomalies_new$anomaly_flag=1
+      anomalies=rbind(anomalies,anomalies_new)}
+  }
+  #write.csv(anomalies,file = paste("Anomalies_", deparse(substitute(data)), ".csv",sep = ""),row.names = F)
+  return(anomalies)
+}
+###################################################################################################
 
 date_list=unique(subset(godaddy[order(godaddy[[1]]),],godaddy[[1]]>=Initial_date,select = c(1)))
 
@@ -454,14 +486,31 @@ for (date in 1:nrow(date_list)){
 
 
 predicted_values_1=Prediction(godaddy_set_1,date_list[date,])
-predicted_values_2=Prediction(godaddy_set_2,date_list[date,])
+#predicted_values_2=Prediction(godaddy_set_2,date_list[date,])
 predicted_values_3=Prediction(godaddy_set_3,date_list[date,])
 predicted_values_4=Prediction(godaddy_set_4,date_list[date,])
-predicted_values_5=Prediction(godaddy_set_5,date_list[date,])
-predicted_values_6=Prediction(godaddy_set_6,date_list[date,])
-predicted_values_7=Prediction(godaddy_set_7,date_list[date,])
-predicted_values_8=Prediction(godaddy_set_8,date_list[date,])
-  #call prediction function using data where date <= date and predict for date +1
+
+#fix this
+#predicted_values_5=Prediction(godaddy_set_5,date_list[date,])
+
+
+
+#predicted_values_6=Prediction(godaddy_set_6,date_list[date,])
+#predicted_values_7=Prediction(godaddy_set_7,date_list[date,])
+#predicted_values_8=Prediction(godaddy_set_8,date_list[date,])
+
+anomalies_set_1=rbind(anomalies_set_1,Anomaly_DetectionTS(godaddy_set_1,predicted_values_1))
+#anomalies_set_2=rbind(anomalies_set_2,Anomaly_DetectionTS(godaddy_set_2,predicted_values_2))
+anomalies_set_3=rbind(anomalies_set_3,Anomaly_DetectionTS(godaddy_set_3,predicted_values_3))
+anomalies_set_4=rbind(anomalies_set_4,Anomaly_DetectionTS(godaddy_set_4,predicted_values_4))
+#anomalies_set_5=rbind(anomalies_set_5,Anomaly_DetectionTS(godaddy_set_5,predicted_values_5))
+#anomalies_set_6=rbind(anomalies_set_6,Anomaly_DetectionTS(godaddy_set_6,predicted_values_6))
+#anomalies_set_7=rbind(anomalies_set_7,Anomaly_DetectionTS(godaddy_set_7,predicted_values_7))
+#anomalies_set_8=rbind(anomalies_set_8,Anomaly_DetectionTS(godaddy_set_8,predicted_values_8))
+
+
   #compare value of date+1 with actual data
   
 }
+
+
