@@ -40,7 +40,7 @@ for (j in 1:no_of_metric){
     
     
     #combine with old predictions
-    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
+    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],toString(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
   }
 }
 
@@ -97,7 +97,7 @@ for (j in 1:no_of_metric){
     
     
     #combine with old predictions
-    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
+    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],toString(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
   }
 }
 
@@ -146,7 +146,7 @@ for (j in 1:no_of_metric){
     
     
     #combine with old predictions
-    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
+    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],toString(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
   }
 }
 
@@ -157,11 +157,12 @@ write.table(predictions,file = paste("Threshold_Initial_", "godaddy_set_4", ".cs
 ###########################################################################################################
 
 
+
 data_train=subset(godaddy_set_5,godaddy_set_5[[1]]<"2015-01-01")
 
 metric_col_start=ncol(sample_sub_combinations_5)+1
 no_of_metric=ncol(godaddy_set_5)-(ncol(sample_sub_combinations_5)+1)
-dimension=sample_sub_combinations_5
+dimension=data.frame(sample_sub_combinations_5)
 
 predictions=NULL
 #j loop for remaining metrics
@@ -169,10 +170,10 @@ predictions=NULL
 #prediction_func=function(data_train,metric_col_start,dimension,no_of_metric){
 for (j in 1:no_of_metric){
   for(i in 1:nrow(dimension)){
-    time_series_data=merge(data_train,dimension[i,])[, names(data_train)]
+    time_series_data=merge(data_train,dimension[i,,drop=FALSE])[, names(data_train)]
     
     time_series_data=subset(time_series_data[order(time_series_data[[1]]),],select=c(metric_col_start+j))
-    
+    length(time_series_data$X_u1.gcr==0)
     #order by date
     if (mean(time_series_data[[1]]) == 0)
       next
@@ -199,12 +200,10 @@ for (j in 1:no_of_metric){
     
     
     #combine with old predictions
-    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
+    predictions=rbind(predictions,cbind(colnames(data_train)[metric_col_start+j],toString(data_train[nrow(data_train),1]+ as.difftime(1, unit="days")),dimension[i,],prediction_min,abs_pred,prediction_max))
   }
 }
 
 write.table(predictions,file = paste("Threshold_Initial_", "godaddy_set_5", ".csv",sep = ""),row.names = F, sep=",",  col.names=FALSE)
 
 #########################################################################################################################
-
-
