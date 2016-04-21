@@ -42,7 +42,7 @@ godaddy_set_5=subset(godaddy,godaddy$tot_1_2_flag==1,select = c(1,4:(ncol(godadd
 
 
 #Here we know that column 2,3,4 are dimension columns
-sample_dimension_combinations=sample_n(unique(subset(godaddy,godaddy$tot_row_flag==0,select = c(2,3,4))),5)
+sample_dimension_combinations=sample_n(unique(subset(godaddy,godaddy$tot_row_flag==0,select = c(2,3,4))),20)
 #sample_sub_combinations_6=unique(subset(sample_dimension_combinations,select = c(1)))
 #sample_sub_combinations_7=unique(subset(sample_dimension_combinations,select = c(2)))
 sample_sub_combinations_5=unique(subset(sample_dimension_combinations,select = c(3)))
@@ -124,7 +124,7 @@ dimension_number=c(ncol(sample_dimension_combinations),2,2,ncol(sample_sub_combi
 
 Xref_table=data.frame(subset,dimension_table,dimension_number)
 Xref_table <<- Xref_table
-Initial_date<<-"2015-09-26"
+Initial_date<<-"2015-09-01"
 
 
 data_train=subset(godaddy_set_1,godaddy_set_1[[1]]<Initial_date)
@@ -478,7 +478,7 @@ Anomaly_DetectionTS=function(data,preds){
 
 date_list=unique(subset(godaddy[order(godaddy[[1]]),],godaddy[[1]]>=Initial_date,select = c(1)))
 
-date=1
+date=3
 
 
 
@@ -487,8 +487,10 @@ for (date in 1:nrow(date_list)){
 
 predicted_values_1=Prediction(godaddy_set_1,date_list[date,])
 #predicted_values_2=Prediction(godaddy_set_2,date_list[date,])
-predicted_values_3=Prediction(godaddy_set_3,date_list[date,])
-predicted_values_4=Prediction(godaddy_set_4,date_list[date,])
+
+#fix this
+#predicted_values_3=Prediction(godaddy_set_3,date_list[date,])
+#predicted_values_4=Prediction(godaddy_set_4,date_list[date,])
 
 #fix this
 #predicted_values_5=Prediction(godaddy_set_5,date_list[date,])
@@ -501,8 +503,8 @@ predicted_values_4=Prediction(godaddy_set_4,date_list[date,])
 
 anomalies_set_1=rbind(anomalies_set_1,Anomaly_DetectionTS(godaddy_set_1,predicted_values_1))
 #anomalies_set_2=rbind(anomalies_set_2,Anomaly_DetectionTS(godaddy_set_2,predicted_values_2))
-anomalies_set_3=rbind(anomalies_set_3,Anomaly_DetectionTS(godaddy_set_3,predicted_values_3))
-anomalies_set_4=rbind(anomalies_set_4,Anomaly_DetectionTS(godaddy_set_4,predicted_values_4))
+#anomalies_set_3=rbind(anomalies_set_3,Anomaly_DetectionTS(godaddy_set_3,predicted_values_3))
+#anomalies_set_4=rbind(anomalies_set_4,Anomaly_DetectionTS(godaddy_set_4,predicted_values_4))
 #anomalies_set_5=rbind(anomalies_set_5,Anomaly_DetectionTS(godaddy_set_5,predicted_values_5))
 #anomalies_set_6=rbind(anomalies_set_6,Anomaly_DetectionTS(godaddy_set_6,predicted_values_6))
 #anomalies_set_7=rbind(anomalies_set_7,Anomaly_DetectionTS(godaddy_set_7,predicted_values_7))
@@ -510,7 +512,167 @@ anomalies_set_4=rbind(anomalies_set_4,Anomaly_DetectionTS(godaddy_set_4,predicte
 
 
   #compare value of date+1 with actual data
+
   
 }
 
 
+output_1=merge(godaddy_set_1,anomalies_set_1,all.x=TRUE)
+output_1$prediction_min[is.na(output_1$prediction_min)==TRUE]=0
+output_1$abs_pred[is.na(output_1$abs_pred)==TRUE]=0
+output_1$prediction_max[is.na(output_1$prediction_max)==TRUE]=0
+output_1$anomaly_metric[is.na(output_1$anomaly_metric)==TRUE]=0
+output_1$anomaly_flag[is.na(output_1$anomaly_flag)==TRUE]=0
+
+# #remaining
+# output_1$deviation_from_lower[output_1$anomaly_flag==1]=abs(output_1$prediction_min-)
+# output_1$=if()
+
+#prioritization
+write.table(output_1,file = paste("Report_", "output_1", ".csv",sep = ""),row.names = F, sep=",")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #creating empty copy
+# predictions=NULL
+# 
+# 
+# #Train data from Jan 2012 - Jan 1 2015
+# data_train=subset(data,orderdate <= '2015-01-01')
+# 
+# 
+# #unique groups
+# grp=unique(subset(data,select = dimension_col))
+# 
+# i=1
+# #For every group
+# for(i in 1:(nrow(grp))) {
+#   
+#   
+#   #ideally this would be in a for loop and subset the data in phases depending on number of columns in the dimension_col    
+#   if(length(dimension_col)==3){ 
+#     time_series_data=subset(data_train,(data_train[,1]==grp[i,1]) & (data_train[,2] == grp[i,2]) & (data_train[,3]==grp[i,3]),select = c(metric_passed))
+#   }
+#   if(length(dimension_col)==2){ 
+#     time_series_data=subset(data_train,(data_train[,1]==grp[i,1]) & (data_train[,2] == grp[i,2]) ,select = c(metric_passed))
+#   }
+#   if(length(dimension_col)==1){ 
+#     time_series_data=subset(data_train,(data_train[,1]==grp[i,1]) ,select = c(metric_passed))
+#   }
+#   #order by date
+#   if (mean(time_series_data[,1]) == 0)
+#     next
+#   if (dim(time_series_data)[1] < 30)
+#     next
+#   #need to think if this helps or not
+#   
+#   #find outliers and the best replacement values
+#   g<-data.frame(tsoutliers(time_series_data[,1]))
+#   #replace
+#   time_series_data[g$index,1]=g$replacements
+#   #convert to time series , units of 7 days
+#   
+#   
+#   time_series_data=msts(time_series_data,seasonal.periods=c(7,365))
+#   #next day prediction
+#   pred_arima=forecast(tbats(time_series_data,parallel = TRUE),h=1)
+#   
+#   #absolute prediction
+#   abs_pred<-pred_arima$mean[1]
+#   #lower threshold
+#   prediction_min<-pred_arima$lower[2]
+#   #upper threshold
+#   prediction_max<-pred_arima$upper[2]
+#   #combine with old predictions
+#   
+#   predictions=rbind(predictions,cbind(grp[i,],"2015-01-02",metric_name,abs_pred,prediction_min,prediction_max))
+# }
+# 
+# 
+# colnames(predictions)=colnames(initial_pred)
+# #test set 2 jan onwards
+# data_test=subset(data,orderdate > '2015-01-01' & orderdate <= '2015-01-04')
+# #list of dats in test
+# date=unique(subset(data_test[order(data_test$orderdate),],select = c(orderdate)))
+# #for each date
+# 
+# for(i in 1:nrow(date)) {
+#   
+#   
+#   current_date=format(date[i,1],"%Y-%m-%d")
+#   print(current_date)
+#   current_date_observed=subset(data_test,orderdate==current_date)
+#   merged=merge(predictions,current_date_observed)
+#   anomalies_new=subset(merged, merged[,metric_passed]<prediction_lower)
+#   anomalies_new <- subset(anomalies_new, select = c(c(orderdate),dimension_col,c(metric_passed),c(prediction,prediction_lower,prediction_upper)))
+#   
+#   merged[,c(7,10)]
+#   
+#   anomalies=rbind(anomalies,anomalies_new)
+#   data_train=rbind(data_train,current_date_observed)
+#   
+#   next_day=as.Date(current_date)+1
+#   next_day=format(next_day,"%Y-%m-%d") 
+#   predictions=subset(predictions,predictions[,1]=='Dummy')
+#   
+#   
+#   
+#   for(j in 1:(nrow(grp))) {
+#     if(length(dimension_col)==3){ 
+#       time_series_data=subset(data_train,(data_train[,1]==grp[j,1]) & (data_train[,2] == grp[j,2]) & (data_train[,3]==grp[j,3]),select = c(metric_passed))
+#     }
+#     if(length(dimension_col)==2){ 
+#       time_series_data=subset(data_train,(data_train[,1]==grp[j,1]) & (data_train[,2] == grp[j,2]) ,select = c(metric_passed))
+#     }
+#     if(length(dimension_col)==1){ 
+#       time_series_data=subset(data_train,(data_train[,1]==grp[j,1]) ,select = c(metric_passed))
+#     }
+#     #order by date
+#     if (mean(time_series_data[,1]) == 0)
+#       next
+#     if (dim(time_series_data)[1] < 30)
+#       next
+#     #need to think if this helps or not
+#     
+#     #find outliers and the best replacement values
+#     g<-data.frame(tsoutliers(time_series_data[,1]))
+#     #replace
+#     time_series_data[g$index,1]=g$replacements
+#     #convert to time series , units of 7 days
+#     
+#     
+#     time_series_data=msts(time_series_data,seasonal.periods=c(7,365))
+#     #next day prediction
+#     pred_arima=forecast(tbats(time_series_data,parallel = TRUE),h=1)
+#     
+#     #absolute prediction
+#     abs_pred<-pred_arima$mean[1]
+#     #lower threshold
+#     prediction_min<-pred_arima$lower[2]
+#     #upper threshold
+#     prediction_max<-pred_arima$upper[2]
+#     #combine with old predictions
+#     predictions=rbind(predictions,cbind(grp[j,],next_day,metric_name,abs_pred,prediction_min,prediction_max))
+#   }
+#   colnames(predictions)=colnames(initial_pred)
+#   
+#   print(as.Date(current_date)+1)
+#   
+#   write.csv(anomalies,"Output_today.csv",row.names = F)  
+#   output=merge(godaddy,anomalies,all.x=TRUE)
+#   write.csv(output,"Comparison_Report.csv",row.names = F,col.names = F)
+#   
+# }
