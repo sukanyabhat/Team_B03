@@ -345,15 +345,14 @@ predicted_values_5=Prediction(godaddy_set_5,test_date_list[current_date,])
 #predicted_values_7=Prediction(godaddy_set_7,test_date_list[current_date,])
 #predicted_values_8=Prediction(godaddy_set_8,test_date_list[current_date,])
 
-anomalies_set_1=rbind(anomalies_set_1,Anomaly_DetectionTS(godaddy_set_1,predicted_values_1))
-#anomalies_set_2=rbind(anomalies_set_2,Anomaly_DetectionTS(godaddy_set_2,predicted_values_2))
-anomalies_set_3=rbind(anomalies_set_3,Anomaly_DetectionTS(godaddy_set_3,predicted_values_3))
-anomalies_set_4=rbind(anomalies_set_4,Anomaly_DetectionTS(godaddy_set_4,predicted_values_4))
-anomalies_set_5=rbind(anomalies_set_5,Anomaly_DetectionTS(godaddy_set_5,predicted_values_5))
-#anomalies_set_6=rbind(anomalies_set_6,Anomaly_DetectionTS(godaddy_set_6,predicted_values_6))
-#anomalies_set_7=rbind(anomalies_set_7,Anomaly_DetectionTS(godaddy_set_7,predicted_values_7))
-#anomalies_set_8=rbind(anomalies_set_8,Anomaly_DetectionTS(godaddy_set_8,predicted_values_8))
-
+anomalies_set_1=rbind(anomalies_set_1,setNames(Anomaly_DetectionTS(godaddy_set_1,predicted_values_1),names(anomalies_set_1)))
+#anomalies_set_2=rbind(anomalies_set_2,setNames(Anomaly_DetectionTS(godaddy_set_2,predicted_values_2),names(anomalies_set_2)))
+anomalies_set_3=rbind(anomalies_set_3,setNames(Anomaly_DetectionTS(godaddy_set_3,predicted_values_3),names(anomalies_set_3)))
+anomalies_set_4=rbind(anomalies_set_4,setNames(Anomaly_DetectionTS(godaddy_set_4,predicted_values_4),names(anomalies_set_4)))
+anomalies_set_5=rbind(anomalies_set_5,setNames(Anomaly_DetectionTS(godaddy_set_5,predicted_values_5),names(anomalies_set_5)))
+#anomalies_set_6=rbind(anomalies_set_6,setNames(Anomaly_DetectionTS(godaddy_set_6,predicted_values_6),names(anomalies_set_6)))
+#anomalies_set_7=rbind(anomalies_set_7,setNames(Anomaly_DetectionTS(godaddy_set_7,predicted_values_7),names(anomalies_set_7)))
+#anomalies_set_8=rbind(anomalies_set_8,setNames(Anomaly_DetectionTS(godaddy_set_8,predicted_values_8),names(anomalies_set_8)))
 
   #compare value of date+1 with actual data
 
@@ -571,5 +570,3 @@ if(output_5!=NULL){
 
 
 print(Sys.time())
-
-
